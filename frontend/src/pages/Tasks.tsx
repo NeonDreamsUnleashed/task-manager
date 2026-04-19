@@ -1,31 +1,23 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
+import bg from "../assets/bg.jpg";
 
-type Task = {
-  id: string;
-  title: string;
-  description?: string;
-  priority: string;
-  status: string;
-};
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+} from "@hello-pangea/dnd";
+
+import TaskForm from "../components/TaskForm";
+import TaskCard from "../components/TaskCard";
+
+import type { Task } from "../types/task";
+
+const columns = ["TODO", "IN_PROGRESS", "DONE"];
 
 export default function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // CREATE
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [priority, setPriority] = useState("LOW");
-
-  // FILTER
-  const [filter, setFilter] = useState("ALL");
-
-  // EDIT
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editPriority, setEditPriority] = useState("LOW");
 
   // LOAD
   useEffect(() => {
@@ -44,21 +36,10 @@ export default function Tasks() {
   }, []);
 
   // CREATE
-  const addTask = async () => {
-    if (!title.trim()) return;
-
+  const addTask = async (data: any) => {
     try {
-      const res = await api.post("/tasks", {
-        title,
-        description,
-        priority,
-      });
-
+      const res = await api.post("/tasks", data);
       setTasks((prev) => [res.data, ...prev]);
-
-      setTitle("");
-      setDescription("");
-      setPriority("LOW");
     } catch (err) {
       console.log("CREATE ERROR:", err);
     }
@@ -74,170 +55,123 @@ export default function Tasks() {
     }
   };
 
-  // STATUS UPDATE
-  const changeStatus = async (id: string, status: string) => {
+  // EDIT
+  const editTask = async (id: string, data: any) => {
     try {
-      await api.put(`/tasks/${id}`, { status });
-
-      setTasks((prev) =>
-        prev.map((t) => (t.id === id ? { ...t, status } : t))
-      );
-    } catch (err) {
-      console.log("STATUS ERROR:", err);
-    }
-  };
-
-  // START EDIT
-  const startEdit = (task: Task) => {
-    setEditingId(task.id);
-    setEditTitle(task.title);
-    setEditDescription(task.description || "");
-    setEditPriority(task.priority);
-  };
-
-  // SAVE EDIT
-  const saveEdit = async (id: string) => {
-    try {
-      const res = await api.put(`/tasks/${id}`, {
-        title: editTitle,
-        description: editDescription,
-        priority: editPriority,
-      });
+      const res = await api.put(`/tasks/${id}`, data);
 
       setTasks((prev) =>
         prev.map((t) => (t.id === id ? res.data : t))
       );
-
-      setEditingId(null);
     } catch (err) {
       console.log("EDIT ERROR:", err);
     }
   };
 
-  // FILTER (FIXED)
-  const filteredTasks =
-    filter === "ALL"
-      ? tasks
-      : tasks.filter((t) => t.status === filter);
+  // 🔥 DRAG (FIXED WITHOUT LAG)
+  const onDragEnd = async (result: any) => {
+    if (!result.destination) return;
+
+    const { draggableId, destination } = result;
+    const newStatus = destination.droppableId;
+
+    // 👉 сохраняем старый state (для отката)
+    const prevTasks = [...tasks];
+
+    // 🔥 1. мгновенно обновляем UI
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === draggableId ? { ...t, status: newStatus } : t
+      )
+    );
+
+    try {
+      // 🔥 2. отправляем на сервер
+      await api.put(`/tasks/${draggableId}`, {
+        status: newStatus,
+      });
+    } catch (err) {
+      console.log("DND ERROR:", err);
+
+      // ❗ если ошибка → откат
+      setTasks(prevTasks);
+    }
+  };
+
+  const getTasksByStatus = (status: string) =>
+    tasks.filter((t) => t.status === status);
 
   return (
     <div style={styles.page}>
-      <div style={styles.container}>
-        <h1 style={styles.title}>📌 Tasks Board</h1>
+      <h1 style={styles.title}>📌 Tasks Board</h1>
 
-        {/* CREATE */}
-        <div style={styles.form}>
-          <input
-            style={styles.input}
-            placeholder="Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
+      <TaskForm onAdd={addTask} />
 
-          <input
-            style={styles.input}
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+      {loading ? (
+        <p style={styles.info}>Loading...</p>
+      ) : (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div style={styles.board}>
+            {columns.map((col) => (
+              <Droppable droppableId={col} key={col}>
+                {(provided) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    style={styles.column}
+                  >
+                    <h3 style={styles.columnTitle}>{col}</h3>
 
-          <select
-            style={styles.select}
-            value={priority}
-            onChange={(e) => setPriority(e.target.value)}
-          >
-            <option value="LOW">LOW</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="HIGH">HIGH</option>
-          </select>
-
-          <button style={styles.button} onClick={addTask}>
-            + Add
-          </button>
-        </div>
-
-        {/* FILTER (FIXED - setFilter USED) */}
-        <div style={styles.filters}>
-          {["ALL", "TODO", "IN_PROGRESS", "DONE"].map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              style={{
-                ...styles.filterBtn,
-                background: filter === f ? "#22c55e" : "#334155",
-              }}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-
-        {/* LIST */}
-        {loading ? (
-          <p style={styles.info}>Loading...</p>
-        ) : (
-          <div style={styles.grid}>
-            {filteredTasks.map((t) => (
-              <div key={t.id} style={styles.card}>
-                {/* EDIT MODE */}
-                {editingId === t.id ? (
-                  <>
-                    <input
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                    />
-
-                    <input
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                    />
-
-                    <select
-                      value={editPriority}
-                      onChange={(e) => setEditPriority(e.target.value)}
-                    >
-                      <option value="LOW">LOW</option>
-                      <option value="MEDIUM">MEDIUM</option>
-                      <option value="HIGH">HIGH</option>
-                    </select>
-
-                    <button onClick={() => saveEdit(t.id)}>Save</button>
-                    <button onClick={() => setEditingId(null)}>Cancel</button>
-                  </>
-                ) : (
-                  <>
-                    <div style={styles.cardTop}>
-                      <h3>{t.title}</h3>
-
-                      <div>
-                        <button onClick={() => startEdit(t)}>✏️</button>
-                        <button onClick={() => deleteTask(t.id)}>✕</button>
-                      </div>
-                    </div>
-
-                    <p style={styles.desc}>{t.description}</p>
-
-                    <div style={styles.row}>
-                      <span style={styles.badge}>{t.priority}</span>
-
-                      <select
-                        value={t.status}
-                        onChange={(e) =>
-                          changeStatus(t.id, e.target.value)
-                        }
+                    {getTasksByStatus(col).map((task, index) => (
+                      <Draggable
+                        key={task.id}
+                        draggableId={task.id}
+                        index={index}
                       >
-                        <option value="TODO">TODO</option>
-                        <option value="IN_PROGRESS">IN_PROGRESS</option>
-                        <option value="DONE">DONE</option>
-                      </select>
-                    </div>
-                  </>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            style={{
+                              ...provided.draggableProps.style,
+                              transform: snapshot.isDragging
+                                ? provided.draggableProps.style?.transform +
+                                  " scale(1.03)"
+                                : provided.draggableProps.style?.transform,
+                              boxShadow: snapshot.isDragging
+                                ? "0 10px 20px rgba(0,0,0,0.3)"
+                                : "none",
+                            }}
+                          >
+                            <TaskCard
+                              task={task}
+                              onDelete={deleteTask}
+                              onStatus={async (id, status) => {
+                                // тоже делаем без лага
+                                setTasks((prev) =>
+                                  prev.map((t) =>
+                                    t.id === id ? { ...t, status } : t
+                                  )
+                                );
+
+                                await api.put(`/tasks/${id}`, { status });
+                              }}
+                              onEdit={editTask}
+                            />
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+
+                    {provided.placeholder}
+                  </div>
                 )}
-              </div>
+              </Droppable>
             ))}
           </div>
-        )}
-      </div>
+        </DragDropContext>
+      )}
     </div>
   );
 }
@@ -245,75 +179,36 @@ export default function Tasks() {
 const styles: any = {
   page: {
     minHeight: "100vh",
-    background: "#0f172a",
+    backgroundImage: `
+      linear-gradient(rgba(2,6,23,0.85), rgba(2,6,23,0.9)),
+      url(${bg})
+    `,
+    backgroundSize: "cover",
     padding: "40px",
-    fontFamily: "Arial",
     color: "white",
   },
-  container: { maxWidth: "1000px", margin: "0 auto" },
-  title: { fontSize: "32px", marginBottom: "20px" },
 
-  form: { display: "flex", gap: "10px", marginBottom: "15px" },
-  input: { flex: 1, padding: "10px", borderRadius: "8px", border: "none" },
-  select: { padding: "10px", borderRadius: "8px" },
-
-  button: {
-    background: "#22c55e",
-    border: "none",
-    padding: "10px 15px",
-    borderRadius: "8px",
-    cursor: "pointer",
+  title: {
+    fontSize: "36px",
+    marginBottom: "20px",
   },
 
-  filters: { display: "flex", gap: "10px", marginBottom: "20px" },
-
-  filterBtn: {
-    border: "none",
-    padding: "6px 10px",
-    borderRadius: "6px",
-    color: "white",
-    cursor: "pointer",
+  board: {
+    display: "flex",
+    gap: "20px",
+    marginTop: "20px",
   },
 
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(250px, 1fr))",
-    gap: "15px",
-  },
-
-  card: {
+  column: {
+    flex: 1,
     background: "#1e293b",
     padding: "15px",
     borderRadius: "12px",
+    minHeight: "400px",
   },
 
-  cardTop: {
-    display: "flex",
-    justifyContent: "space-between",
-  },
-
-  deleteBtn: {
-    background: "transparent",
-    border: "none",
-    color: "red",
-    cursor: "pointer",
-  },
-
-  desc: {
-    fontSize: "14px",
-    color: "#cbd5e1",
-    margin: "10px 0",
-  },
-
-  row: {
-    display: "flex",
-    justifyContent: "space-between",
-  },
-
-  badge: {
-    background: "#334155",
-    padding: "4px 8px",
-    borderRadius: "6px",
+  columnTitle: {
+    marginBottom: "10px",
   },
 
   info: {
