@@ -1,0 +1,15 @@
+node_modules
+.env
+dist
+build
+coverage
+
+# prisma
+prisma/dev.db
+
+# logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
