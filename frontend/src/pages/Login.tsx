@@ -2,25 +2,44 @@ import { useState } from "react";
 import api from "../api/axios";
 
 export default function Login({ onLogin }: any) {
+  const [isRegister, setIsRegister] = useState(false);
+
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleSubmit = async () => {
     try {
       setLoading(true);
       setError("");
 
-      const res = await api.post("/auth/login", {
-        email,
-        password,
-      });
+      if (isRegister) {
+        await api.post("/auth/register", {
+          name,
+          email,
+          password,
+        });
 
-      onLogin(res.data.token);
+        // после регистрации сразу логиним
+        const res = await api.post("/auth/login", {
+          email,
+          password,
+        });
+        localStorage.setItem("token", res.data.token); 
+        onLogin(res.data.token);
+      } else {
+        const res = await api.post("/auth/login", {
+          email,
+          password,
+        });
 
-    } catch (err) {
-      setError("Неверный email или пароль");
+        onLogin(res.data.token);
+      }
+    } catch (err: any) {
+      setError("Ошибка авторизации");
     } finally {
       setLoading(false);
     }
@@ -29,7 +48,18 @@ export default function Login({ onLogin }: any) {
   return (
     <div style={styles.wrapper}>
       <div style={styles.card}>
-        <h2 style={styles.title}>Вход в систему</h2>
+        <h2 style={styles.title}>
+          {isRegister ? "Регистрация" : "Вход"}
+        </h2>
+
+        {isRegister && (
+          <input
+            style={styles.input}
+            placeholder="Имя"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        )}
 
         <input
           style={styles.input}
@@ -50,10 +80,23 @@ export default function Login({ onLogin }: any) {
 
         <button
           style={styles.button}
-          onClick={handleLogin}
+          onClick={handleSubmit}
           disabled={loading}
         >
-          {loading ? "Загрузка..." : "Войти"}
+          {loading
+            ? "Загрузка..."
+            : isRegister
+            ? "Создать аккаунт"
+            : "Войти"}
+        </button>
+
+        <button
+          style={styles.link}
+          onClick={() => setIsRegister(!isRegister)}
+        >
+          {isRegister
+            ? "Уже есть аккаунт? Войти"
+            : "Нет аккаунта? Регистрация"}
         </button>
       </div>
     </div>
@@ -80,22 +123,25 @@ const styles: any = {
   },
   title: {
     textAlign: "center",
-    marginBottom: 10,
   },
   input: {
     padding: 10,
     borderRadius: 6,
     border: "1px solid #ccc",
-    fontSize: 14,
   },
   button: {
     padding: 10,
-    borderRadius: 6,
     border: "none",
+    borderRadius: 6,
     background: "#4f46e5",
-    color: "#fff",
+    color: "white",
     cursor: "pointer",
-    fontWeight: "bold",
+  },
+  link: {
+    border: "none",
+    background: "transparent",
+    cursor: "pointer",
+    color: "#4f46e5",
   },
   error: {
     color: "red",
