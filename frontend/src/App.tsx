@@ -11,23 +11,22 @@ import Dashboard from "./pages/Dashboard";
 import Profile from "./pages/Profile";
 
 function AppInner() {
-  const { token, logout } = useAuth();
+  const { logout } = useAuth();
 
   return (
     <>
-      {token && <Navbar onLogout={logout} />}
+      <Navbar onLogout={logout} />
       <ToastContainer />
 
       <Routes>
-        <Route
-          path="/login"
-          element={token ? <Navigate to="/" /> : <Login />}
-        />
-        <Route path="/"          element={token ? <Tasks />     : <Navigate to="/login" />} />
-        <Route path="/dashboard" element={token ? <Dashboard /> : <Navigate to="/login" />} />
-        <Route path="/profile"   element={token ? <Profile />   : <Navigate to="/login" />} />
-        <Route path="/about"     element={token ? <About />     : <Navigate to="/login" />} />
-        <Route path="/settings"  element={token ? <Settings />  : <Navigate to="/login" />} />
+        <Route path="/" element={<Tasks />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/settings" element={<Settings />} />
+
+        {/* login просто убираем или оставляем пустым */}
+        <Route path="/login" element={<Navigate to="/" />} />
       </Routes>
     </>
   );
