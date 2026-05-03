@@ -1,212 +1,137 @@
 import { useEffect, useState } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { showToast } from "../components/Toast";
 
 type Theme = "dark" | "light";
+type AccentColor = "violet" | "blue" | "emerald" | "rose";
+
+const accentColors: { key: AccentColor; hex: string; label: string }[] = [
+  { key: "violet",  hex: "#7c3aed", label: "Violet" },
+  { key: "blue",    hex: "#2563eb", label: "Blue"   },
+  { key: "emerald", hex: "#059669", label: "Emerald" },
+  { key: "rose",    hex: "#e11d48", label: "Rose"   },
+];
 
 export default function Settings() {
-  const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem("theme") as Theme) || "dark";
-  });
+  const { logout } = useAuth();
+  const [theme, setTheme] = useState<Theme>(() =>
+    (localStorage.getItem("theme") as Theme) || "dark"
+  );
+  const [accent, setAccent] = useState<AccentColor>(() =>
+    (localStorage.getItem("accent") as AccentColor) || "violet"
+  );
+  const [compactMode, setCompactMode] = useState(() =>
+    localStorage.getItem("compact") === "true"
+  );
 
-  const [compactMode, setCompactMode] = useState<boolean>(() => {
-    return localStorage.getItem("compact") === "true";
-  });
-
-  // 🎨 theme sync
   useEffect(() => {
     localStorage.setItem("theme", theme);
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
-  // 🧩 compact sync
+  useEffect(() => {
+    localStorage.setItem("accent", accent);
+    document.documentElement.setAttribute("data-accent", accent);
+    const hex = accentColors.find((c) => c.key === accent)?.hex || "#7c3aed";
+    document.documentElement.style.setProperty("--accent", hex);
+  }, [accent]);
+
   useEffect(() => {
     localStorage.setItem("compact", String(compactMode));
-    document.documentElement.setAttribute(
-      "data-compact",
-      String(compactMode)
-    );
+    document.documentElement.setAttribute("data-compact", String(compactMode));
   }, [compactMode]);
 
+  const clearData = () => {
+    showToast("Данные сохранены в браузере, очищены настройки UI", "info");
+    localStorage.removeItem("compact");
+    localStorage.removeItem("accent");
+    localStorage.removeItem("theme");
+    setTheme("dark");
+    setAccent("violet");
+    setCompactMode(false);
+  };
+
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        {/* HEADER */}
-        <div style={styles.header}>
-          <h1 style={styles.title}>⚙️ Settings</h1>
-          <p style={styles.subtitle}>
-            Управление интерфейсом и поведением приложения
-          </p>
+    <div className="page-settings">
+      <div className="page-header">
+        <h1 className="page-title">Настройки</h1>
+        <p className="page-sub">Управление интерфейсом</p>
+      </div>
+
+      <div className="settings-grid">
+        {/* THEME */}
+        <div className="dash-card">
+          <h3 className="dash-card-title">🎨 Тема</h3>
+          <p className="setting-desc">Выберите цветовую схему интерфейса</p>
+          <div className="theme-btns">
+            <button
+              className={"theme-btn" + (theme === "dark" ? " theme-btn-active" : "")}
+              onClick={() => { setTheme("dark"); showToast("Тёмная тема", "info"); }}
+            >
+              🌙 Dark
+            </button>
+            <button
+              className={"theme-btn" + (theme === "light" ? " theme-btn-active" : "")}
+              onClick={() => { setTheme("light"); showToast("Светлая тема", "info"); }}
+            >
+              ☀ Light
+            </button>
+          </div>
         </div>
 
-        {/* GRID */}
-        <div style={styles.grid}>
-          {/* THEME CARD */}
-          <div style={styles.card}>
-            <h3>🎨 Theme</h3>
-            <p style={styles.text}>Выбор светлой или тёмной темы</p>
-
-            <div style={styles.row}>
+        {/* ACCENT */}
+        <div className="dash-card">
+          <h3 className="dash-card-title">✦ Акцентный цвет</h3>
+          <p className="setting-desc">Цвет кнопок и выделений</p>
+          <div className="accent-swatches">
+            {accentColors.map((c) => (
               <button
-                onClick={() => setTheme("dark")}
-                style={{
-                  ...styles.button,
-                  background:
-                    theme === "dark" ? "#22c55e" : "#334155",
-                }}
-              >
-                Dark
-              </button>
-
-              <button
-                onClick={() => setTheme("light")}
-                style={{
-                  ...styles.button,
-                  background:
-                    theme === "light" ? "#22c55e" : "#334155",
-                }}
-              >
-                Light
-              </button>
-            </div>
-          </div>
-
-          {/* UI CARD */}
-          <div style={styles.card}>
-            <h3>🧩 Interface</h3>
-
-            <div style={styles.toggleRow}>
-              <span>Compact mode</span>
-
-              <input
-                type="checkbox"
-                checked={compactMode}
-                onChange={() => setCompactMode((p) => !p)}
+                key={c.key}
+                className={"accent-swatch" + (accent === c.key ? " accent-swatch-active" : "")}
+                style={{ background: c.hex }}
+                onClick={() => { setAccent(c.key); showToast(c.label + " акцент", "info"); }}
+                title={c.label}
               />
-            </div>
-
-            <p style={styles.hint}>
-              Уменьшает размер карточек задач
-            </p>
+            ))}
           </div>
+        </div>
 
-          {/* INFO CARD */}
-          <div style={styles.cardFull}>
-            <h3>ℹ️ About project</h3>
-
-            <div style={styles.chips}>
-              <span style={styles.chip}>React</span>
-              <span style={styles.chip}>TypeScript</span>
-              <span style={styles.chip}>Node.js</span>
-              <span style={styles.chip}>REST API</span>
-              <span style={styles.chip}>Drag & Drop</span>
+        {/* COMPACT */}
+        <div className="dash-card">
+          <h3 className="dash-card-title">🧩 Интерфейс</h3>
+          <div className="setting-toggle-row">
+            <div>
+              <div className="setting-toggle-label">Компактный режим</div>
+              <div className="setting-desc">Уменьшает размер карточек задач</div>
             </div>
+            <button
+              className={"toggle" + (compactMode ? " toggle-on" : "")}
+              onClick={() => setCompactMode((p) => !p)}
+            >
+              <span className="toggle-thumb" />
+            </button>
+          </div>
+        </div>
 
-            <p style={styles.footerText}>
-              Task Manager v1.0 — учебный проект Kanban системы
-            </p>
+        {/* DANGER */}
+        <div className="dash-card settings-danger">
+          <h3 className="dash-card-title">⚠ Опасная зона</h3>
+          <div className="danger-actions">
+            <div>
+              <div className="setting-toggle-label">Сбросить настройки UI</div>
+              <div className="setting-desc">Вернуть тему и цвета к значениям по умолчанию</div>
+            </div>
+            <button className="btn-danger" onClick={clearData}>Сбросить</button>
+          </div>
+          <div className="danger-actions" style={{ marginTop: 16 }}>
+            <div>
+              <div className="setting-toggle-label">Выйти из аккаунта</div>
+              <div className="setting-desc">Завершить сессию</div>
+            </div>
+            <button className="btn-danger" onClick={logout}>Выйти</button>
           </div>
         </div>
       </div>
     </div>
   );
 }
-const styles: any = {
-  page: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #0f172a, #020617)",
-    color: "white",
-    padding: "40px",
-    fontFamily: "Inter, Arial",
-  },
-
-  container: {
-    maxWidth: "900px",
-    margin: "0 auto",
-  },
-
-  header: {
-    marginBottom: "25px",
-  },
-
-  title: {
-    fontSize: "36px",
-    marginBottom: "6px",
-  },
-
-  subtitle: {
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "16px",
-  },
-
-  card: {
-    background: "#1e293b",
-    padding: "18px",
-    borderRadius: "14px",
-    border: "1px solid #334155",
-  },
-
-  cardFull: {
-    gridColumn: "1 / -1",
-    background: "#1e293b",
-    padding: "18px",
-    borderRadius: "14px",
-    border: "1px solid #334155",
-  },
-
-  text: {
-    color: "#94a3b8",
-    fontSize: "13px",
-    marginBottom: "12px",
-  },
-
-  row: {
-    display: "flex",
-    gap: "10px",
-  },
-
-  button: {
-    padding: "8px 14px",
-    border: "none",
-    borderRadius: "10px",
-    color: "white",
-    cursor: "pointer",
-    transition: "0.2s",
-  },
-
-  toggleRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-
-  hint: {
-    fontSize: "12px",
-    color: "#64748b",
-    marginTop: "8px",
-  },
-
-  chips: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "8px",
-    marginTop: "10px",
-  },
-
-  chip: {
-    background: "#334155",
-    padding: "6px 10px",
-    borderRadius: "20px",
-    fontSize: "12px",
-  },
-
-  footerText: {
-    marginTop: "12px",
-    fontSize: "12px",
-    color: "#94a3b8",
-  },
-};

@@ -1,166 +1,91 @@
-export default function Info() {
+export default function About() {
+  const stack = [
+    { icon: "⚛", name: "React 19", desc: "SPA framework" },
+    { icon: "🔷", name: "TypeScript", desc: "Type safety" },
+    { icon: "🟢", name: "Node.js + Express", desc: "REST API" },
+    { icon: "🗃", name: "Prisma + PostgreSQL", desc: "Database ORM" },
+    { icon: "🐳", name: "Docker Compose", desc: "Containerization" },
+    { icon: "⚡", name: "Vite", desc: "Build tool" },
+  ];
+
+  const features = [
+    "Kanban-доска с drag & drop",
+    "Оптимистичное обновление UI",
+    "JWT авторизация",
+    "Три уровня приоритета задач",
+    "Dashboard с аналитикой",
+    "Страница профиля с достижениями",
+    "Адаптивный дизайн",
+    "Контейнеризация через Docker",
+  ];
+
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
+    <div className="page-about">
+      <div className="page-header">
+        <h1 className="page-title">О проекте</h1>
+        <p className="page-sub">Full-stack Kanban Task Manager</p>
+      </div>
 
-        {/* HEADER */}
-        <div style={styles.hero}>
-          <h1 style={styles.title}>📌 Task Manager</h1>
-          <p style={styles.subtitle}>
-            Modern Kanban-based productivity system for task tracking and workflow management
-          </p>
+      {/* HERO */}
+      <div className="about-hero">
+        <div className="about-hero-icon">⬡</div>
+        <h2 className="about-hero-title">TaskFlow</h2>
+        <p className="about-hero-desc">
+          Учебный full-stack проект — система управления задачами в стиле Trello / Linear.
+          Цель: изучение архитектуры SPA, REST API, DnD и UI/UX паттернов.
+        </p>
+        <div className="about-badges">
+          {["Kanban", "REST API", "SPA", "Full-stack", "Docker"].map((b) => (
+            <span key={b} className="about-badge">{b}</span>
+          ))}
         </div>
+      </div>
 
-        {/* ABOUT */}
-        <div style={styles.card}>
-          <h2>ℹ️ About project</h2>
-          <p style={styles.text}>
-            Это full-stack учебный проект, который имитирует реальные SaaS системы управления задачами
-            (аналог Trello / Jira / Linear). Основная цель — изучение архитектуры, API и UI/UX паттернов.
-          </p>
-
-          <div style={styles.badges}>
-            <span style={styles.badge}>Kanban System</span>
-            <span style={styles.badge}>REST API</span>
-            <span style={styles.badge}>SPA</span>
-            <span style={styles.badge}>Full-stack</span>
-          </div>
+      {/* TECH STACK */}
+      <div className="dash-card">
+        <h3 className="dash-card-title">⚙ Tech Stack</h3>
+        <div className="stack-grid">
+          {stack.map((s) => (
+            <div key={s.name} className="stack-item">
+              <span className="stack-icon">{s.icon}</span>
+              <div>
+                <div className="stack-name">{s.name}</div>
+                <div className="stack-desc">{s.desc}</div>
+              </div>
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* STACK */}
-        <div style={styles.card}>
-          <h2>⚙️ Tech Stack</h2>
-
-          <div style={styles.grid}>
-            <div>⚛️ React + TypeScript</div>
-            <div>🟢 Node.js + Express</div>
-            <div>📡 Axios (HTTP client)</div>
-            <div>🧠 REST Architecture</div>
-            <div>🎯 Drag & Drop (DND)</div>
-            <div>💾 Local State + API sync</div>
-          </div>
+      {/* FEATURES */}
+      <div className="dash-card">
+        <h3 className="dash-card-title">✦ Возможности</h3>
+        <div className="features-grid">
+          {features.map((f) => (
+            <div key={f} className="feature-item">
+              <span className="feature-check">✓</span>
+              {f}
+            </div>
+          ))}
         </div>
+      </div>
 
-        {/* FEATURES */}
-        <div style={styles.card}>
-          <h2>🚀 Features</h2>
+      {/* DID YOU KNOW */}
+      <div className="dash-card about-accent-card">
+        <h3 className="dash-card-title">💡 Знаете ли вы?</h3>
+        <p className="about-fact">
+          Kanban-система была разработана в Toyota в 1940-х для оптимизации производственных процессов.
+          Сегодня она лежит в основе Jira, Trello, Linear и тысяч других SaaS-инструментов.
+        </p>
+      </div>
 
-          <ul style={styles.list}>
-            <li>✔ Create / update / delete tasks</li>
-            <li>✔ Drag & drop between columns</li>
-            <li>✔ Optimistic UI updates</li>
-            <li>✔ Filtering by status</li>
-            <li>✔ Real-time UI sync with backend</li>
-            <li>✔ Editable task cards</li>
-          </ul>
-        </div>
-
-        {/* FUN BLOCK */}
-        <div style={styles.cardAccent}>
-          <h2>💡 Did you know?</h2>
-          <p style={styles.text}>
-            Kanban система была создана в Toyota для оптимизации производства.
-            Сегодня она используется в Jira, Trello, Linear и тысячах SaaS продуктов.
-          </p>
-        </div>
-
-        {/* FOOTER */}
-        <div style={styles.footer}>
-          <span>v1.0.0</span>
-          <span>•</span>
-          <span>Frontend Learning Project</span>
-          <span>•</span>
-          <span>2026</span>
-        </div>
-
+      <div className="about-footer">
+        <span>TaskFlow v2.0</span>
+        <span>·</span>
+        <span>2026</span>
+        <span>·</span>
+        <span>Educational Project</span>
       </div>
     </div>
   );
 }
-const styles: any = {
-  page: {
-    minHeight: "100vh",
-    background: "linear-gradient(135deg, #0f172a, #020617)",
-    color: "white",
-    padding: "40px",
-    fontFamily: "Inter, Arial",
-  },
-
-  container: {
-    maxWidth: "900px",
-    margin: "0 auto",
-  },
-
-  hero: {
-    marginBottom: "20px",
-  },
-
-  title: {
-    fontSize: "36px",
-    marginBottom: "6px",
-  },
-
-  subtitle: {
-    color: "#94a3b8",
-    fontSize: "14px",
-  },
-
-  card: {
-    background: "#1e293b",
-    padding: "18px",
-    borderRadius: "14px",
-    border: "1px solid #334155",
-    marginTop: "15px",
-  },
-
-  cardAccent: {
-    background: "linear-gradient(135deg, #1e293b, #0f172a)",
-    padding: "18px",
-    borderRadius: "14px",
-    border: "1px solid #22c55e",
-    marginTop: "15px",
-  },
-
-  text: {
-    color: "#cbd5e1",
-    lineHeight: "1.6",
-    fontSize: "14px",
-  },
-
-  badges: {
-    display: "flex",
-    gap: "8px",
-    marginTop: "10px",
-    flexWrap: "wrap",
-  },
-
-  badge: {
-    background: "#334155",
-    padding: "6px 10px",
-    borderRadius: "20px",
-    fontSize: "12px",
-  },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "10px",
-    marginTop: "10px",
-    color: "#cbd5e1",
-  },
-
-  list: {
-    paddingLeft: "18px",
-    color: "#cbd5e1",
-    lineHeight: "1.8",
-  },
-
-  footer: {
-    marginTop: "20px",
-    display: "flex",
-    gap: "10px",
-    fontSize: "12px",
-    color: "#64748b",
-    justifyContent: "center",
-  },
-};

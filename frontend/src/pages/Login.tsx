@@ -1,151 +1,114 @@
 import { useState } from "react";
 import api from "../api/axios";
+import { useAuth } from "../contexts/AuthContext";
 
-export default function Login({ onLogin }: any) {
+export default function Login() {
+  const { login } = useAuth();
   const [isRegister, setIsRegister] = useState(false);
-
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    if (!email || !password) { setError("Заполните все поля"); return; }
     try {
       setLoading(true);
       setError("");
 
+      let userEmail = email;
+      let userName = name || email.split("@")[0];
+
       if (isRegister) {
-        await api.post("/auth/register", {
-          name,
-          email,
-          password,
-        });
-
-        // после регистрации сразу логиним
-        const res = await api.post("/auth/login", {
-          email,
-          password,
-        });
-        localStorage.setItem("token", res.data.token); 
-        onLogin(res.data.token);
+        await api.post("/auth/register", { name, email, password });
+        const res = await api.post("/auth/login", { email, password });
+        login(res.data.token, { name: userName, email: userEmail });
       } else {
-        const res = await api.post("/auth/login", {
-          email,
-          password,
-        });
-
-        onLogin(res.data.token);
+        const res = await api.post("/auth/login", { email, password });
+        login(res.data.token, { name: userName, email: userEmail });
       }
-    } catch (err: any) {
-      setError("Ошибка авторизации");
+    } catch {
+      setError(isRegister ? "Ошибка регистрации. Проверьте данные." : "Неверный email или пароль.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={styles.wrapper}>
-      <div style={styles.card}>
-        <h2 style={styles.title}>
-          {isRegister ? "Регистрация" : "Вход"}
-        </h2>
+    <div className="login-page">
+      <div className="login-bg">
+        <div className="login-orb login-orb-1" />
+        <div className="login-orb login-orb-2" />
+      </div>
 
-        {isRegister && (
-          <input
-            style={styles.input}
-            placeholder="Имя"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        )}
+      <div className="login-card">
+        <div className="login-logo">
+          <span className="login-logo-icon">⬡</span>
+          <span className="login-logo-text">TaskFlow</span>
+        </div>
 
-        <input
-          style={styles.input}
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <h1 className="login-title">
+          {isRegister ? "Создать аккаунт" : "Добро пожаловать"}
+        </h1>
+        <p className="login-sub">
+          {isRegister ? "Начните управлять задачами" : "Войдите в свой аккаунт"}
+        </p>
 
-        <input
-          style={styles.input}
-          placeholder="Пароль"
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="login-fields">
+          {isRegister && (
+            <div className="field-group">
+              <label className="field-label">Имя</label>
+              <input
+                className="field-input"
+                placeholder="Иван Иванов"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+          )}
 
-        {error && <div style={styles.error}>{error}</div>}
+          <div className="field-group">
+            <label className="field-label">Email</label>
+            <input
+              className="field-input"
+              placeholder="you@example.com"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div className="field-group">
+            <label className="field-label">Пароль</label>
+            <input
+              className="field-input"
+              placeholder="••••••••"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            />
+          </div>
+        </div>
+
+        {error && <div className="login-error">{error}</div>}
 
         <button
-          style={styles.button}
+          className="login-btn"
           onClick={handleSubmit}
           disabled={loading}
         >
-          {loading
-            ? "Загрузка..."
-            : isRegister
-            ? "Создать аккаунт"
-            : "Войти"}
+          {loading ? "Загрузка..." : isRegister ? "Создать аккаунт" : "Войти"}
         </button>
 
         <button
-          style={styles.link}
-          onClick={() => setIsRegister(!isRegister)}
+          className="login-toggle"
+          onClick={() => { setIsRegister(!isRegister); setError(""); }}
         >
-          {isRegister
-            ? "Уже есть аккаунт? Войти"
-            : "Нет аккаунта? Регистрация"}
+          {isRegister ? "Уже есть аккаунт? Войти →" : "Нет аккаунта? Регистрация →"}
         </button>
       </div>
     </div>
   );
 }
-
-const styles: any = {
-  wrapper: {
-    height: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#f5f7fa",
-  },
-  card: {
-    width: 320,
-    padding: 30,
-    borderRadius: 12,
-    background: "#fff",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-    display: "flex",
-    flexDirection: "column",
-    gap: 15,
-  },
-  title: {
-    textAlign: "center",
-  },
-  input: {
-    padding: 10,
-    borderRadius: 6,
-    border: "1px solid #ccc",
-  },
-  button: {
-    padding: 10,
-    border: "none",
-    borderRadius: 6,
-    background: "#4f46e5",
-    color: "white",
-    cursor: "pointer",
-  },
-  link: {
-    border: "none",
-    background: "transparent",
-    cursor: "pointer",
-    color: "#4f46e5",
-  },
-  error: {
-    color: "red",
-    fontSize: 13,
-    textAlign: "center",
-  },
-};
